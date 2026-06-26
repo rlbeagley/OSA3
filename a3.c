@@ -4,8 +4,10 @@
 #include <semaphore.h>
 #include <unistd.h>
 
-SEMAPHORE mutex;// TA is mutex (1 spot)
-// queue is semaphore of 3 spots
+sem_t mutex;// TA is mutex (1 spot)
+sem_t waitingLine;// queue is semaphore of 3 spots
+pthread_mutex_t counterMutex = PTHREAD_MUTEX_INITIALIZER;//to ensure only one thread at a time changes studentsInLine
+int studentsInLine = 0;//can't see if waiting line has no running threads or one (both returns 0)
 
 
 // Perhaps the best option for simulating students programming—as well as the TA 
@@ -21,25 +23,57 @@ help() {
     // this the the TA's loop
     for (;;) {
         // check if someone in queue
-        // wait for TA to be available wait(mutex)
-        // getHelp()
-        // signal TA is free
+        if (studentsInLine == 0) {
+        // wait for TA to be available wait(mutex): decrements the semaphore by 1. If the value is 0, the thread blocks until it can decrement.
+            sem_wait(&mutex);
+            pthread_mutex_lock(&counterMutex);
+            getHelp()
+            studentsInLine--;
+            pthread_mutex_unlock(&counterMutex);
+        // signal TA is free: increments the semaphore by 1. 
+            sem_post(&mutex);
         // signal queue up (one less person in queue)
+            sem_wait(&waitingLine);
+        }else{
+            sem_wait(&mutex);
+        }
     }
 }
 
 askForHelp() {
     // INVOKED BY STUDENT
     // if queue full, program()
+    if (studentsInLine == 3){
+        program();
+    }
+    else{
     // otherwise join queue
-    // if at front of queue, check if TA awake
+        sem_post(&waitingLine);
+        pthread_mutex_lock(&counterMutex);
+        studentsInLine++;
+        pthread_mutex_unlock(&counterMutex);
+    // if at front of queue, wake TA up
+        if(studentsInLine == 0){
     // if awake, wait(mutex)
+            sem_wait(&mutex);
     // if asleep, signal(mutex)
+            sem_post(&mutex);
+        }
+    }
 
     //yay!
 }
 
+getHelp() {
+}
 
+program() {
+}
+
+int main(){
+    sem_init(&mutex, 0, 1);              
+    sem_init(&waitingLine, 0, 3);
+}
 
 
 
