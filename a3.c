@@ -4,7 +4,7 @@
 #include <semaphore.h>
 #include <unistd.h>
 
-// TA is mutex (1 spot)
+SEMAPHORE mutex;// TA is mutex (1 spot)
 // queue is semaphore of 3 spots
 
 
