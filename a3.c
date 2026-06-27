@@ -54,10 +54,14 @@ askForHelp() {
         pthread_mutex_unlock(&counterMutex);
     // if at front of queue, wake TA up
         if(studentsInLine == 1){
-    // if awake, wait(mutex)
+    // if awake, wait(mutex) (awake and asleep both look like mutex =0?)
             sem_wait(&mutex);
-    // if asleep, signal(mutex)
-            sem_post(&mutex);
+    // you are out of the queue
+            pthread_mutex_lock(&counterMutex);
+            studentsInLine--;
+            pthread_mutex_unlock(&counterMutex);
+            help()
+    // if asleep, signal(mutex) not needed?
         }
     }
 
