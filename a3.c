@@ -10,14 +10,8 @@ pthread_mutex_t counterMutex = PTHREAD_MUTEX_INITIALIZER;//to ensure only one th
 int studentsInLine = 0;//can't see if waiting line has no running threads or one (both returns 0)
 int NUM_STUDENTS = 5; // const that can be changed for number of student threads
 
-
-// Perhaps the best option for simulating students programming—as well as the TA 
-// providing help to a student—is to have the appropriate threads sleep for a random period 
-// of time.
-
-// set amount of time for each student thread to 'live'
-// random sleep (programming) time
-// try to join queue -> get helped till finish
+// Students cycle between programming and asking for help
+// Program will end once students get help (just so it doesn't infinitely run)
 
 // get helped between 1 and 3 seconds
 void getHelp() {
@@ -83,6 +77,8 @@ void *askForHelp(void *arg) {
 
         sem_wait(&availableWaitingSpots); // take a spot in waitin room
 
+        return NULL;
+
     }
 }
 
@@ -106,6 +102,8 @@ int main(){
 
     for (int i = 0; i < NUM_STUDENTS; i++)
         pthread_join(students[i], NULL);
+
+    sleep(10); // allow threads to finish
 
     return 0;
 }
