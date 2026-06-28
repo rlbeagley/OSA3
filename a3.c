@@ -19,26 +19,37 @@ int NUM_STUDENTS = 5; // const that can be changed for number of student threads
 // random sleep (programming) time
 // try to join queue -> get helped till finish
 
+// get helped between 1 and 3 seconds
+void getHelp() {
+    sleep(rand() % 1 + 3);
+}
+
+// program for between 1 and 10 seconds
+void program(int id) {
+    sleep(rand() % 10 + 1);
+    printf("Student %d: I am done programming\n", id);
+}
+
+
 void *help(void *arg) {
     // INVOKED BY TA
     for (;;) {
         // check if someone in queue
+        pthread_mutex_lock(&counterMutex);
         if (studentsInLine > 0) {
-
-            sem_wait(&mutex);
-
-            pthread_mutex_lock(&counterMutex);
             studentsInLine--;
             pthread_mutex_unlock(&counterMutex);
 
             printf("TA: Helping a student. %d remaining in queue.\n", studentsInLine);
             getHelp();
 
-            printf("TA: I am done helping the student.");
+            printf("TA: I am done helping the student.\n");
             sem_post(&mutex);// TA is free again
             sem_post(&availableWaitingSpots); // release the student, increment available spots
 
         } else {
+            pthread_mutex_unlock(&counterMutex);
+            printf("TA: No students, going to sleep\n");
             sem_wait(&mutex); // TA sleeps if nobody in line
         }
     }
@@ -61,41 +72,25 @@ void *askForHelp(void *arg) {
         }
 
         studentsInLine++;
-        pthread_mutex_unlock(&counterMutex);
-
-        sem_wait(&availableWaitingSpots); // take a spot in waitin room
-        printf("Student %d: I am in the queue (%d/3)\n", id, studentsInLine);
+        
 
         // wake TA if I'm the first in line
         if (studentsInLine == 1) {
             printf("Student %d: TA is sleeping, waking them up\n", id);
             sem_post(&mutex);
         }
+        pthread_mutex_unlock(&counterMutex);
 
-        sem_wait(&mutex); // waits for TA to be done helping me (as it will be bl)
-
-        printf("Student %d: I am getting help\n", id);
-        printf("Student %d: I am done\n", id);
+        sem_wait(&availableWaitingSpots); // take a spot in waitin room
 
     }
-}
-
-// get helped between 1 and 3 seconds
-void getHelp() {
-    sleep(rand() % 3 + 1);
-}
-
-// program for between 1 and 3 seconds
-void program(int id) {
-    sleep(rand() % 3 + 1);
-    printf("Student %d: I am done programming\n", id);
 }
 
 int main(){
     srand(time(NULL));
 
-    sem_init(&mutex, 0, 1);
-    sem_init(&waitingLine, 0, 3);
+    sem_init(&mutex, 0, 0);
+    sem_init(&availableWaitingSpots, 0, 3);
 
     // create TA thread that runs help
     pthread_t ta;
@@ -109,7 +104,6 @@ int main(){
         pthread_create(&students[i], NULL, askForHelp, &ids[i]);
     }
 
-    // wait for threads to all finish
     for (int i = 0; i < NUM_STUDENTS; i++)
         pthread_join(students[i], NULL);
 
